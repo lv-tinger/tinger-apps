@@ -3,6 +3,7 @@ package org.tinger.bootstrap.module;
 import org.tinger.common.utils.ClassUtils;
 import org.tinger.common.utils.ResourceUtils;
 import org.tinger.common.utils.ServiceLoaderUtils;
+import org.tinger.common.utils.StringUtils;
 import org.tinger.core.apps.Module;
 
 import java.util.LinkedList;
@@ -24,6 +25,12 @@ public class DefaultModuleScanner implements ModuleScanner {
         List<Module> modules = new LinkedList<>();
         try {
             for (String moduleName : moduleNames) {
+                if(StringUtils.isBlank(moduleName)){
+                    continue;
+                }
+                if (StringUtils.prefixWith(moduleName, "#")) {
+                    continue;
+                }
                 Class<?> moduleClass = classLoader.loadClass(moduleName);
                 if (!moduleClass.isInterface() || !Module.class.isAssignableFrom(moduleClass)) {
                     throw new RuntimeException();
