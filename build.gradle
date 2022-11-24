@@ -1,0 +1,68 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+group 'org.tinger'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    maven {
+        allowInsecureProtocol = true
+        url 'http://localhost:10001/repository/maven-tinger/'
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.tinger:tinger-core:${version}"
+    implementation "org.tinger:tinger-common:${version}"
+
+    implementation "org.slf4j:slf4j-api:${slf4j_version}"
+    implementation "ch.qos.logback:logback-core:${logback_version}"
+    implementation "ch.qos.logback:logback-classic:${logback_version}"
+    implementation "org.apache.logging.log4j:log4j-api:${log4j2_version}"
+    implementation "org.apache.logging.log4j:log4j-core:${log4j2_version}"
+
+    implementation "org.projectlombok:lombok:${lombok_version}"
+    annotationProcessor "org.projectlombok:lombok:${lombok_version}"
+    testImplementation "org.projectlombok:lombok:${lombok_version}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombok_version}"
+}
+
+def getRepositoryUrl() {
+    return isSnapshot() ? SNAPSHOT_REPOSITORY_URL : RELEASE_REPOSITORY_URL
+}
+
+def isSnapshot() {
+    return version.endsWith("SNAPSHOT")
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allSource
+}
+
+java {
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            allowInsecureProtocol = true
+            url = getRepositoryUrl()
+            credentials {
+                username = "${NEXUS_USERNAME}"
+                password = "${NEXUS_PASSWORD}"
+            }
+        }
+    }
+}
