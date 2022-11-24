@@ -4,10 +4,14 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.tinger.bootstrap.module.ModuleScanner;
 import org.tinger.common.utils.ArrayUtils;
+import org.tinger.common.utils.ConverterUtil;
 import org.tinger.common.utils.ServiceLoaderUtils;
 import org.tinger.core.apps.*;
+import org.tinger.core.conf.Config;
+import org.tinger.core.conf.ConfigModule;
 import org.tinger.core.listen.Listener;
 import org.tinger.core.listen.Publisher;
+import org.tinger.core.system.ENV;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -19,14 +23,16 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class TingerApplication extends Application {
-    public String[] args;
-
     @Getter
-    public String name;
+    private final String[] args;
+
+    private final String name;
+
+    private ENV env;
 
     private final Publisher publisher = new Publisher();
 
-    private List<Module> modules = new ArrayList<>();
+    private List<Module<?>> modules = new ArrayList<>();
 
     private final List<ApplicationInterceptor> interceptors;
 
@@ -34,6 +40,16 @@ public class TingerApplication extends Application {
         this.name = name;
         this.args = args == null ? ArrayUtils.EMPTY_STRING_ARRAY : args;
         this.interceptors = ServiceLoaderUtils.scan(ApplicationInterceptor.class);
+    }
+
+    @Override
+    public String name() {
+        return this.name;
+    }
+
+    @Override
+    public ENV env() {
+        return this.env;
     }
 
     @Override
@@ -58,8 +74,12 @@ public class TingerApplication extends Application {
             interceptor.preHandler(this);
         }
 
-        for (Module module : modules) {
+        for (Module<?> module : modules) {
             module.install();
+            if (module instanceof ConfigModule) {
+                Config config = ((ConfigModule) module).provide().provide();
+                this.env = ENV.of(ConverterUtil.toString(config.load("env"), ENV.DEV.name()));
+            }
             log.info(module.getName() + " installed");
         }
 
@@ -81,8 +101,8 @@ public class TingerApplication extends Application {
             interceptor.preHandler(this);
         }
 
-        List<Module> reverse = this.modules.stream().sorted((o1, o2) -> Integer.compare(o2.getOrder(), o1.getOrder())).collect(Collectors.toList());
-        for (Module module : reverse) {
+        List<Module<?>> reverse = this.modules.stream().sorted((o1, o2) -> Integer.compare(o2.getOrder(), o1.getOrder())).collect(Collectors.toList());
+        for (Module<?> module : reverse) {
             module.destroy();
             log.info(module.getName() + " destroyed");
         }
@@ -104,7 +124,7 @@ public class TingerApplication extends Application {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends Module> T module(Class<T> type) {
+    public <T extends Module<?>> T module(Class<T> type) {
         List<T> filters = modules.stream().filter(type::isInstance).map(x -> (T) x).collect(Collectors.toList());
         if (filters.size() != 1) {
             throw new RuntimeException();

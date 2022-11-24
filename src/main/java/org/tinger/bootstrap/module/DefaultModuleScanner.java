@@ -16,13 +16,13 @@ public class DefaultModuleScanner implements ModuleScanner {
     private static final String file = "classpath://org.tinger.module.ini";
 
     @Override
-    public List<Module> scan() {
+    public List<Module<?>> scan() {
         List<String> moduleNames = ResourceUtils.readLines(file);
         ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
         if (classLoader == null) {
             throw new RuntimeException();
         }
-        List<Module> modules = new LinkedList<>();
+        List<Module<?>> modules = new LinkedList<>();
         try {
             for (String moduleName : moduleNames) {
                 if(StringUtils.isBlank(moduleName)){
@@ -35,8 +35,7 @@ public class DefaultModuleScanner implements ModuleScanner {
                 if (!moduleClass.isInterface() || !Module.class.isAssignableFrom(moduleClass)) {
                     throw new RuntimeException();
                 }
-                ServiceLoaderUtils.load(moduleClass);
-                Module module = (Module) ServiceLoaderUtils.load(moduleClass);
+                Module<?> module = (Module<?>) ServiceLoaderUtils.load(moduleClass);
                 modules.add(module);
             }
         } catch (Exception e) {
