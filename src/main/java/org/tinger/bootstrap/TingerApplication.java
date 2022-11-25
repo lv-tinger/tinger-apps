@@ -8,7 +8,6 @@ import org.tinger.common.utils.ConverterUtil;
 import org.tinger.common.utils.ServiceLoaderUtils;
 import org.tinger.core.apps.*;
 import org.tinger.core.conf.Config;
-import org.tinger.core.conf.ConfigModule;
 import org.tinger.core.listen.Listener;
 import org.tinger.core.listen.Publisher;
 import org.tinger.core.system.ENV;
@@ -74,12 +73,21 @@ public class TingerApplication extends Application {
             interceptor.preHandler(this);
         }
 
+        this.consume(new Listener() {
+            @Override
+            public String getChannel() {
+                return "TINGER-CONFIG-LOADED";
+            }
+
+            @Override
+            public void process(Object object) {
+                Config config = (Config) object;
+                env = ENV.of(ConverterUtil.toString(config.load("env"), ENV.DEV.name()));
+            }
+        });
+
         for (Module<?> module : modules) {
             module.install();
-            if (module instanceof ConfigModule) {
-                Config config = ((ConfigModule) module).provide().provide();
-                this.env = ENV.of(ConverterUtil.toString(config.load("env"), ENV.DEV.name()));
-            }
             log.info(module.getName() + " installed");
         }
 
