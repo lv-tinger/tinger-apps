@@ -4,13 +4,10 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.tinger.bootstrap.module.ModuleScanner;
 import org.tinger.common.utils.ArrayUtils;
-import org.tinger.common.utils.ConverterUtil;
 import org.tinger.common.utils.ServiceLoaderUtils;
 import org.tinger.core.apps.*;
-import org.tinger.core.conf.Config;
 import org.tinger.core.listen.Listener;
 import org.tinger.core.listen.Publisher;
-import org.tinger.core.system.ENV;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -27,8 +24,6 @@ public class TingerApplication extends Application {
 
     private final String name;
 
-    private ENV env;
-
     private final Publisher publisher = new Publisher();
 
     private List<Module<?>> modules = new ArrayList<>();
@@ -44,11 +39,6 @@ public class TingerApplication extends Application {
     @Override
     public String name() {
         return this.name;
-    }
-
-    @Override
-    public ENV env() {
-        return this.env;
     }
 
     @Override
@@ -73,7 +63,7 @@ public class TingerApplication extends Application {
             interceptor.preHandler(this);
         }
 
-        this.consume(new Listener() {
+        /*this.consume(new Listener() {
             @Override
             public String getChannel() {
                 return "TINGER-CONFIG-LOADED";
@@ -84,7 +74,7 @@ public class TingerApplication extends Application {
                 Config config = (Config) object;
                 env = ENV.of(ConverterUtil.toString(config.load("env"), ENV.DEV.name()));
             }
-        });
+        });*/
 
         for (Module<?> module : modules) {
             module.install();
